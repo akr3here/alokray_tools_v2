@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typewrite — Alok's Tools</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: #141210;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 48px 20px;
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 22px;
+            left: 26px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #6b6560;
+            text-decoration: none;
+            z-index: 1001;
+        }
+        .back-link:hover { color: #d6d3d1; }
+
+        .controls {
+            margin-bottom: 32px;
+            position: sticky;
+            top: 22px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 6px;
+            background: rgba(28, 25, 23, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+        }
+
+        .btn {
+            background: transparent;
+            border: none;
+            padding: 9px 18px;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            color: #a8a29e;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+        .btn:hover {
+            color: #f5f5f4;
+            background: rgba(255,255,255,0.06);
+        }
+
+        .save-status {
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            color: #6b6560;
+            padding: 0 14px 0 6px;
+            min-width: 64px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+        .save-status.visible { opacity: 1; }
+
+        /* On screen the print table behaves like plain blocks and its spacers are hidden */
+        .sheet, .sheet tbody, .sheet tr, .sheet td {
+            display: block;
+            width: 100%;
+            padding: 0;
+            border: 0;
+        }
+        .sheet { max-width: 800px; }
+        .sheet thead, .sheet tfoot { display: none; }
+
+        .paper-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .paper {
+            position: relative;
+            width: 100%;
+            min-height: 1030px;
+            padding: 90px 80px;
+            background-color: #f6f3eb;
+            border: 1px solid #e3decb;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.6), 0 2px 0 rgba(255,255,255,0.4) inset;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .paper::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.5;
+            mix-blend-mode: multiply;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.85%27 numOctaves=%272%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27 opacity=%270.15%27/%3E%3C/svg%3E");
+        }
+
+        .paper::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            box-shadow: inset 0 0 120px rgba(60, 50, 30, 0.12);
+        }
+
+        .typewriter-editor {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            min-height: 850px;
+            outline: none;
+            background: transparent;
+
+            font-family: 'Special Elite', monospace;
+            font-size: 21px;
+            line-height: 1.75;
+            letter-spacing: 0.1px;
+
+            white-space: pre-wrap;
+            word-wrap: break-word;
+
+            color: #242424;
+            caret-color: #242424;
+        }
+
+        .placeholder-text {
+            position: absolute;
+            top: 90px;
+            left: 80px;
+            color: #b5b0a3;
+            font-family: 'Special Elite', monospace;
+            font-size: 21px;
+            line-height: 1.75;
+            letter-spacing: 0.1px;
+            white-space: pre-wrap;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @media print {
+            /* No page margin: the cream colour now reaches every edge of every page.
+               The visual margins are made below with a repeating spacer. */
+            @page {
+                size: letter portrait;
+                margin: 0;
+            }
+
+            html {
+                background: #f6f3eb !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            body {
+                display: block !important;
+                background: transparent !important;
+                margin: 0 !important;
+                min-height: 0 !important;
+                padding: 0 2cm !important;   /* left and right margins */
+            }
+
+            .controls, .back-link, .placeholder-text {
+                display: none !important;
+            }
+
+            /* Header and footer groups repeat on every printed page,
+               which gives each page its top and bottom margin. */
+            .sheet {
+                display: table !important;
+                width: 100% !important;
+                max-width: none !important;
+                border-collapse: collapse;
+            }
+            .sheet thead { display: table-header-group !important; }
+            .sheet tbody { display: table-row-group !important; }
+            .sheet tfoot { display: table-footer-group !important; }
+            .sheet tr    { display: table-row !important; }
+            .sheet td    { display: table-cell !important; width: auto !important; padding: 0 !important; }
+
+            .print-gap { height: 2.5cm; }
+
+            .paper-wrap {
+                max-width: none !important;
+                width: 100% !important;
+            }
+
+            .paper {
+                width: 100% !important;
+                min-height: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                overflow: visible !important;
+                background: transparent !important;
+            }
+
+            .paper::before, .paper::after {
+                display: none !important;
+            }
+
+            .typewriter-editor {
+                min-height: 0 !important;
+                font-size: 19px;
+                line-height: 1.75;
+                color: #242424 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="/" class="back-link">&larr; Tools</a>
+
+    <div class="controls">
+        <button class="btn" id="pdfBtn" type="button">Print / Save as PDF</button>
+        <button class="btn" id="txtBtn" type="button">Download .txt</button>
+        <span class="save-status" id="saveStatus" aria-live="polite"></span>
+    </div>
+
+    <table class="sheet" role="presentation">
+        <thead><tr><td><div class="print-gap"></div></td></tr></thead>
+        <tbody>
+            <tr>
+                <td>
+                    <div class="paper-wrap">
+                        <div class="paper">
+                            <div class="placeholder-text" id="placeholder">Begin typing your manuscript here...</div>
+                            <div class="typewriter-editor" id="typewriter" contenteditable="true" spellcheck="false"></div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+        <tfoot><tr><td><div class="print-gap"></div></td></tr></tfoot>
+    </table>
+
+    <script>
+    (function () {
+        var editor = document.getElementById('typewriter');
+        var pdfBtn = document.getElementById('pdfBtn');
+        var txtBtn = document.getElementById('txtBtn');
+        var placeholder = document.getElementById('placeholder');
+
+        function updatePlaceholder() {
+            var hasText = editor.textContent.length > 0;
+            placeholder.style.display = hasText ? 'none' : 'block';
+        }
+
+        // ---- Auto-save to the browser ----
+        var STORAGE_KEY = 'typewrite-manuscript-v1';
+        var statusEl = document.getElementById('saveStatus');
+        var saveTimer = null;
+        var hideTimer = null;
+
+        function showStatus(msg) {
+            statusEl.textContent = msg;
+            statusEl.classList.add('visible');
+            clearTimeout(hideTimer);
+            hideTimer = setTimeout(function () {
+                statusEl.classList.remove('visible');
+            }, 1600);
+        }
+
+        function saveNow(silent) {
+            clearTimeout(saveTimer);
+            try {
+                localStorage.setItem(STORAGE_KEY, editor.innerText);
+                if (!silent) showStatus('Saved');
+            } catch (e) {
+                if (!silent) showStatus('Could not save');
+            }
+        }
+
+        function restore() {
+            try {
+                var saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) editor.textContent = saved;
+            } catch (e) { /* storage blocked: start with an empty page */ }
+        }
+
+        editor.addEventListener('input', function () {
+            updatePlaceholder();
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(saveNow, 700);   // saves shortly after you stop typing
+        });
+
+        // Save instantly if the tab is hidden or closed before the timer fires
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'hidden') saveNow(true);
+        });
+        window.addEventListener('pagehide', function () { saveNow(true); });
+
+        restore();
+        updatePlaceholder();
+
+        pdfBtn.addEventListener('click', function () {
+            window.print();
+        });
+
+        txtBtn.addEventListener('click', function () {
+            var text = editor.textContent;
+            var blob = new Blob([text], { type: 'text/plain' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'manuscript.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    })();
+    </script>
+</body>
+</html>
